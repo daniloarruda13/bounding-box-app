@@ -2,6 +2,8 @@
 
 A lightweight PNG bounding box editor for drawing, grouping, and exporting image annotations. Built with plain JavaScript, HTML, and CSS, with no runtime dependencies.
 
+**[Open the live app](https://daniloarruda13.github.io/bounding-box-app/)** · [Source code](https://github.com/daniloarruda13/bounding-box-app) · [Test runs](https://github.com/daniloarruda13/bounding-box-app/actions/workflows/test.yml)
+
 Images and annotations are processed in your browser. No account, image upload, or backend is required to use the editor.
 
 ## Features
