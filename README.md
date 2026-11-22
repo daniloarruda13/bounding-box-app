@@ -10,6 +10,7 @@ Images and annotations are processed in your browser. No account, image upload, 
 
 - Draw multiple bounding boxes and organize them into named, colored groups.
 - Rename boxes and groups, reassign boxes, and see box counts per group.
+- Show or hide each group's boxes with its **Show** checkbox to work around overlapping annotations.
 - Move boxes and resize them using eight handles, even with the drawing tool active.
 - Zoom, fit the image, view at 100%, and pan or scroll in both directions.
 - Choose pixel coordinates or normalize to 1–1,000,000 points (default 1000).
@@ -36,6 +37,8 @@ The preview server listens on your own device only. Port 5173 must be available.
 4. Click or drag an existing box to select or move it. Drag a handle to resize it. Existing boxes and handles take priority over drawing.
 5. Use **Box properties** to rename the selected box or assign it to another group.
 6. Choose your coordinate format, then use **Copy** or **Export JSON**.
+
+Use the **Show** checkbox in each group header to hide or display its boxes. Hidden boxes cannot be selected or dragged, and hiding a selected box clears its selection. Group counts and JSON export still include hidden boxes. Visibility does not affect undo/redo of annotation edits. Drawing a new box in a hidden active group automatically shows that group so the new box is visible.
 
 **Export before refreshing, closing the page, or opening another image.** Annotations live in memory. Opening a new PNG clears boxes and undo history, while retaining group definitions and coordinate settings. Deleting a group deletes its boxes too; Undo restores them.
 

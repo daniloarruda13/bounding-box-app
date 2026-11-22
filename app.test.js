@@ -165,6 +165,58 @@ test('resizing in draw mode, zoom, scrolling, and pointer cancellation', async t
         assert.equal(nodes['normalization-points'].value, 2000); assert.equal(coords().x_min, 300);
       }
     });
+    const groupCheckbox = index => nodes.groups.children[index].children[0].children.find(node => node.className === 'group-visibility').children[0];
+    const showGroup = (index, checked) => { const checkbox = groupCheckbox(index); checkbox.checked = checked; emit(checkbox, 'change'); };
+    await t.test('group visibility hides overlapping boxes, clears selection, and restores geometry', () => {
+      nodes['add-group'].onclick(); draw(100, 100, 300, 300);
+      assert.equal(overlay.children.length, 2);
+      const before = overlay.children.map(node => [node.dataset.id, node.style.cssText]);
+      showGroup(0, false);
+      assert.equal(overlay.children.length, 1);
+      assert.ok(nodes.groups.children[1].classes.has('active'), 'hiding a group must not activate it');
+      assert.equal(nodes['box-count'].textContent, '2 boxes · 1 visible');
+      showGroup(1, false);
+      assert.equal(overlay.children.length, 0);
+      assert.equal(nodes.properties.hidden, true);
+      for (const group of nodes.groups.children) assert.ok(group.children.find(node => node.className.includes('box-row')).disabled);
+      showGroup(0, true); showGroup(1, true);
+      assert.deepEqual(overlay.children.map(node => [node.dataset.id, node.style.cssText]), before);
+      assert.equal(nodes['box-count'].textContent, '2 boxes');
+    });
+    await t.test('annotation undo/redo leaves group visibility preferences intact', () => {
+      showGroup(1, false);
+      nodes.undo.onclick();
+      assert.equal(groupCheckbox(1).checked, false);
+      assert.equal(overlay.children.length, 1);
+      nodes.redo.onclick();
+      assert.equal(groupCheckbox(1).checked, false);
+      assert.equal(overlay.children.length, 1);
+      showGroup(1, true);
+      assert.equal(overlay.children.length, 2);
+    });
+    await t.test('JSON export still includes hidden groups and their boxes', async () => {
+      showGroup(0, false);
+      const createURL = URL.createObjectURL, createElement = doc.createElement;
+      let exported;
+      URL.createObjectURL = blob => { exported = blob; return createURL(blob); };
+      doc.createElement = tag => { const node = createElement(tag); node.click = () => {}; return node; };
+      try {
+        nodes.export.onclick();
+        const data = JSON.parse(await exported.text());
+        assert.equal(data.groups.length, 2);
+        assert.equal(data.groups[0].boxes.length, 1);
+        assert.equal(data.groups[1].boxes.length, 1);
+        assert.equal(overlay.children.length, 1);
+      } finally { URL.createObjectURL = createURL; doc.createElement = createElement; }
+    });
+    await t.test('drawing in a hidden active group makes its new box visible', () => {
+      showGroup(1, false); assert.equal(overlay.children.length, 0);
+      draw(400, 400, 500, 500);
+      assert.equal(groupCheckbox(1).checked, true);
+      assert.equal(groupCheckbox(0).checked, false);
+      assert.equal(overlay.children.length, 2);
+      assert.equal(nodes['box-count'].textContent, '3 boxes · 2 visible');
+    });
   } finally {
     t.mock.timers.tick(3000);
     for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete globalThis[key]; else globalThis[key] = value; }

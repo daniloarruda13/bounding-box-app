@@ -41,6 +41,7 @@ For interaction changes, also check the app in a real browser:
 - Resize all eight handles while Draw is active; verify no extra boxes appear.
 - Move a box to each image boundary, then undo and redo.
 - Rename boxes and groups and reassign a box between groups.
+- Toggle Show for groups with overlapping boxes; verify hidden boxes cannot be edited on the canvas, reappear unchanged when shown, and remain in JSON export.
 - Zoom, scroll both axes, pan, and resize again at the new zoom.
 - Toggle normalization, enter a custom scale, and check invalid values.
 - Paste copied coordinates and inspect JSON export in both modes.

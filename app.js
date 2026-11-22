@@ -8,6 +8,8 @@ let width = 0, height = 0, imageName = '', objectURL, gesture, history = [], fut
 let toastTimer;
 let zoom = 1, fitting = true, spaceHeld = false, pan = null;
 let normalized = true, normalizationPoints = 1000;
+// Group visibility is a view preference, independent of annotation undo history.
+const hiddenGroups = new Set();
 const snapshot = () => structuredClone({ groups, boxes, activeGroup, selected });
 function checkpoint() { history.push(snapshot()); if (history.length > 100) history.shift(); future = []; }
 function restore(state) { ({ groups, boxes, activeGroup, selected } = structuredClone(state)); render(); }
@@ -20,6 +22,7 @@ function element(tag, className, text) { const el = document.createElement(tag);
 function renderBoxes() {
   $('overlay').replaceChildren();
   for (const box of boxes) {
+    if (hiddenGroups.has(box.groupId)) continue;
     const group = groups.find(g => g.id === box.groupId);
     const node = element('div', 'box' + (box.id === selected ? ' selected' : ''));
     node.dataset.id = box.id;
@@ -32,11 +35,13 @@ function renderBoxes() {
   }
 }
 function render() {
+  if (boxes.some(box => box.id === selected && hiddenGroups.has(box.groupId))) selected = null;
   renderBoxes();
   $('groups').replaceChildren();
   for (const group of groups) {
     const groupBoxes = boxes.filter(b => b.groupId === group.id);
-    const section = element('div', 'group' + (group.id === activeGroup ? ' active' : ''));
+    const isHidden = hiddenGroups.has(group.id);
+    const section = element('div', 'group' + (group.id === activeGroup ? ' active' : '') + (isHidden ? ' is-hidden' : ''));
     section.style.setProperty('--color', group.color);
     const head = element('div', 'group-head');
     head.addEventListener('click', () => { activeGroup = group.id; render(); });
@@ -45,6 +50,18 @@ function render() {
     name.addEventListener('click', e => { e.stopPropagation(); activeGroup = group.id; document.querySelectorAll('.group').forEach(n => n.classList.toggle('active', n === section)); });
     name.addEventListener('change', () => { checkpoint(); group.name = name.value.trim() || group.name; render(); });
     head.append(name, element('span', 'count', groupBoxes.length));
+    const visibilityLabel = element('label', 'group-visibility');
+    const visibility = element('input'); visibility.type = 'checkbox'; visibility.checked = !isHidden;
+    visibility.setAttribute('aria-label', `Show boxes in ${group.name}`);
+    visibility.title = isHidden ? 'Show this group’s boxes' : 'Hide this group’s boxes';
+    visibilityLabel.append(visibility, element('span', '', 'Show'));
+    visibilityLabel.addEventListener('click', event => event.stopPropagation());
+    visibility.addEventListener('change', () => {
+      finishGesture(true);
+      if (visibility.checked) hiddenGroups.delete(group.id); else hiddenGroups.add(group.id);
+      render();
+    });
+    head.append(visibilityLabel);
     if (groups.length > 1) {
       const remove = element('button', 'remove-group', '×'); remove.title = 'Delete group and its boxes'; remove.setAttribute('aria-label', `Delete ${group.name}`);
       remove.onclick = e => { e.stopPropagation(); checkpoint(); groups = groups.filter(g => g.id !== group.id); boxes = boxes.filter(b => b.groupId !== group.id); if (activeGroup === group.id) activeGroup = groups[0].id; if (!boxes.some(b => b.id === selected)) selected = null; render(); };
@@ -54,6 +71,8 @@ function render() {
     if (!groupBoxes.length) section.append(element('div', 'group-empty', 'No boxes yet'));
     for (const box of groupBoxes) {
       const row = element('button', 'box-row' + (box.id === selected ? ' active' : ''));
+      row.disabled = isHidden;
+      if (isHidden) row.title = 'Check Show to display and edit this group’s boxes';
       row.append(element('span', '', '▧'), element('span', '', box.name));
       row.onclick = () => { selected = box.id; activeGroup = group.id; setMode('select'); render(); };
       section.append(row);
@@ -62,6 +81,8 @@ function render() {
   }
   $('group-count').textContent = groups.length;
   $('box-count').textContent = `${boxes.length} ${boxes.length === 1 ? 'box' : 'boxes'}`;
+  const visibleCount = boxes.filter(box => !hiddenGroups.has(box.groupId)).length;
+  if (visibleCount !== boxes.length) $('box-count').textContent += ` · ${visibleCount} visible`;
   $('undo').disabled = !history.length; $('redo').disabled = !future.length; $('export').disabled = !width;
   const box = boxes.find(b => b.id === selected);
   $('properties').hidden = !box; $('no-selection').hidden = !!box;
@@ -166,6 +187,8 @@ $('overlay').addEventListener('pointerdown', event => {
     const handle = event.target.closest('[data-handle]')?.dataset.handle;
     gesture = { type: handle ? 'resize' : 'move', handle, start, id: box.id, original: { ...box }, before };
   } else if (mode === 'draw') {
+    // Newly drawn boxes must be visible, even if their active group was hidden.
+    hiddenGroups.delete(activeGroup);
     const box = { id: crypto.randomUUID(), name: `Box ${boxes.length + 1}`, groupId: activeGroup, x: start.x, y: start.y, w: 0, h: 0 };
     boxes.push(box); selected = box.id; gesture = { type: 'draw', start, id: box.id, before };
   } else { selected = null; render(); return; }
