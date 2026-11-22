@@ -5,7 +5,7 @@ export function labelTextColor(hex) {
 }
 
 // Render from original image pixels; zoom, selection, and resize handles are UI only.
-export function drawAnnotatedImage(context, image, width, height, boxes, groups, hiddenGroups, includeLabels) {
+export function drawAnnotatedImage(context, image, width, height, boxes, groups, hiddenGroups, includeLabels, fillBoxes = false) {
   context.clearRect(0, 0, width, height);
   context.drawImage(image, 0, 0, width, height);
   const groupById = new Map(groups.map(group => [group.id, group]));
@@ -15,8 +15,10 @@ export function drawAnnotatedImage(context, image, width, height, boxes, groups,
   context.save();
   for (const box of visible) {
     const color = box.color || groupById.get(box.groupId).color;
-    context.fillStyle = color; context.globalAlpha = .12;
-    context.fillRect(box.x, box.y, box.w, box.h);
+    if (fillBoxes) {
+      context.fillStyle = color; context.globalAlpha = .12;
+      context.fillRect(box.x, box.y, box.w, box.h);
+    }
     context.globalAlpha = 1; context.strokeStyle = color;
     const stroke = Math.min(lineWidth, box.w, box.h);
     context.lineWidth = stroke;

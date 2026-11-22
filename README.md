@@ -59,6 +59,8 @@ Normalization mode and scale are restored from the file. Original pixel geometry
 
 In **Save annotated image**, choose whether to **Show box labels**, then click **Save PNG**. The checkbox controls labels on both the editor canvas and the saved image. The download is named `<image-name>.annotated.png` and uses the original PNG dimensions, regardless of zoom or scrolling. Only visible groups are drawn. Selection outlines and resize handles are omitted; transparent areas of the original image remain transparent unless covered by annotations.
 
+Boxes are outline-only by default. Enable **Fill boxes** in the same section for a translucent fill in each box's color. This preference applies to both the editor and saved PNG and is independent of label visibility. Fill and label preferences are not stored in JSON.
+
 PNG export is a rendered image for sharing. Use **Export JSON** as well to save editable annotation data.
 
 ## Change box colors

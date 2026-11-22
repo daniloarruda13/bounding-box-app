@@ -10,7 +10,7 @@ let width = 0, height = 0, imageName = '', objectURL, gesture, history = [], fut
 let toastTimer;
 let zoom = 1, fitting = true, spaceHeld = false, pan = null;
 let normalized = true, normalizationPoints = 1000;
-let includeLabels = true, savingImage = false;
+let includeLabels = true, fillBoxes = false, savingImage = false;
 // Group visibility is a view preference, independent of annotation undo history.
 const hiddenGroups = new Set();
 const snapshot = (includeSettings = false) => structuredClone({ groups, boxes, activeGroup, selected, ...(includeSettings ? { coordinateSettings: { normalized, normalizationPoints } } : {}) });
@@ -31,7 +31,7 @@ function renderBoxes() {
   for (const box of boxes) {
     if (hiddenGroups.has(box.groupId)) continue;
     const group = groups.find(g => g.id === box.groupId);
-    const node = element('div', 'box' + (box.id === selected ? ' selected' : ''));
+    const node = element('div', 'box' + (box.id === selected ? ' selected' : '') + (fillBoxes ? ' filled' : ''));
     node.dataset.id = box.id;
     const color = box.color || group.color;
     node.style.cssText = `left:${box.x / width * 100}%;top:${box.y / height * 100}%;width:${box.w / width * 100}%;height:${box.h / height * 100}%;--color:${color};--label-text:${labelTextColor(color)}`;
@@ -298,6 +298,7 @@ $('box-group').onchange = () => { const box = boxes.find(b => b.id === selected)
 $('box-color').onchange = () => { const box = boxes.find(b => b.id === selected); if (!box) return; checkpoint(); box.color = $('box-color').value; render(); };
 $('reset-box-color').onclick = () => { const box = boxes.find(b => b.id === selected); if (!box?.color) return; checkpoint(); delete box.color; render(); };
 $('include-labels').onchange = () => { includeLabels = $('include-labels').checked; renderBoxes(); };
+$('fill-boxes').onchange = () => { fillBoxes = $('fill-boxes').checked; renderBoxes(); };
 $('save-image').onclick = async () => {
   if (!width || savingImage) return;
   finishGesture(true); finishPan();
@@ -307,7 +308,7 @@ $('save-image').onclick = async () => {
     const canvas = element('canvas'); canvas.width = width; canvas.height = height;
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Image export is unavailable in this browser.');
-    drawAnnotatedImage(context, $('image'), width, height, boxes, groups, hiddenGroups, includeLabels);
+    drawAnnotatedImage(context, $('image'), width, height, boxes, groups, hiddenGroups, includeLabels, fillBoxes);
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     if (!blob) throw new Error('Could not save this image. Try a smaller PNG.');
     const url = URL.createObjectURL(blob), link = element('a');

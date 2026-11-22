@@ -272,8 +272,8 @@ test('resizing in draw mode, zoom, scrolling, and pointer cancellation', async t
       nodes['include-labels'].checked = false; nodes['include-labels'].onchange();
       assert.equal(overlay.children[0].children.filter(node => node.className === 'box-label').length, 0);
       const createURL = URL.createObjectURL, createElement = doc.createElement;
-      let canvas, downloaded, textCalls = 0, strokeCalls = 0;
-      const context = { clearRect() {}, drawImage() {}, save() {}, restore() {}, fillRect() {}, strokeRect() { strokeCalls++; }, fillText() { textCalls++; }, measureText: text => ({ width: text.length * 8 }) };
+      let canvas, downloaded, textCalls = 0, strokeCalls = 0, fillCalls = 0;
+      const context = { clearRect() {}, drawImage() {}, save() {}, restore() {}, fillRect() { fillCalls++; }, strokeRect() { strokeCalls++; }, fillText() { textCalls++; }, measureText: text => ({ width: text.length * 8 }) };
       URL.createObjectURL = blob => { assert.equal(blob.type, 'image/png'); return createURL(blob); };
       doc.createElement = tag => {
         const node = createElement(tag);
@@ -284,6 +284,12 @@ test('resizing in draw mode, zoom, scrolling, and pointer cancellation', async t
         await nodes['save-image'].onclick();
         assert.equal(canvas.width, 1000); assert.equal(canvas.height, 600);
         assert.equal(downloaded, 'fixture.annotated.png'); assert.equal(textCalls, 0); assert.equal(strokeCalls, 1);
+        assert.equal(fillCalls, 0); assert.equal(overlay.children[0].classes.has('filled'), false);
+        nodes['fill-boxes'].checked = true; nodes['fill-boxes'].onchange();
+        assert.equal(overlay.children[0].classes.has('filled'), true);
+        await nodes['save-image'].onclick(); assert.equal(fillCalls, 1);
+        nodes['fill-boxes'].checked = false; nodes['fill-boxes'].onchange();
+        assert.equal(overlay.children[0].classes.has('filled'), false);
         nodes['include-labels'].checked = true; nodes['include-labels'].onchange();
         assert.equal(overlay.children[0].children.filter(node => node.className === 'box-label').length, 1);
         await nodes['save-image'].onclick(); assert.equal(textCalls, 1);

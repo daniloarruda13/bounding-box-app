@@ -22,6 +22,16 @@ test('PNG draws the original image and only visible boxes at original coordinate
   assert.equal(strokes.length, 1); assert.equal(strokes[0].stroke, '#123456');
   assert.deepEqual(strokes[0].args, [101, 101, 198, 148]);
   assert.equal(context.calls.filter(call => call.method === 'fillText').length, 0);
+  assert.equal(context.calls.filter(call => call.method === 'fillRect').length, 0, 'outline-only is the default');
+});
+
+test('box filling is optional, translucent, and respects group visibility', () => {
+  const context = contextFixture();
+  drawAnnotatedImage(context, {}, 1000, 600, boxes, groups, new Set(['two']), false, true);
+  const fills = context.calls.filter(call => call.method === 'fillRect');
+  assert.equal(fills.length, 1); assert.equal(fills[0].fill, '#123456');
+  assert.equal(fills[0].alpha, .12); assert.deepEqual(fills[0].args, [100, 100, 200, 150]);
+  assert.equal(context.calls.find(call => call.method === 'strokeRect').alpha, 1);
 });
 test('PNG uses per-box colors, optional labels, and keeps labels within image boundaries', () => {
   const context = contextFixture();
