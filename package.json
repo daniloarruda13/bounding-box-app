@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
-    "check": "node --check app.js && node --check geometry.js && node --check annotations.js && node --check server.js && node --check scripts/build.js",
+    "check": "node --check app.js && node --check geometry.js && node --check annotations.js && node --check image-export.js && node --check server.js && node --check scripts/build.js",
     "build": "node scripts/build.js"
   }
 }

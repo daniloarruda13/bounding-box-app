@@ -1,5 +1,6 @@
 import { clamp, normalize, rectangle, move, resize } from './geometry.js';
 import { parseAnnotations } from './annotations.js';
+import { drawAnnotatedImage, labelTextColor } from './image-export.js';
 
 const $ = id => document.getElementById(id);
 const colors = ['#63866a', '#c59152', '#688db4', '#b47791', '#8f80b3', '#4f9c9a'];
@@ -9,6 +10,7 @@ let width = 0, height = 0, imageName = '', objectURL, gesture, history = [], fut
 let toastTimer;
 let zoom = 1, fitting = true, spaceHeld = false, pan = null;
 let normalized = true, normalizationPoints = 1000;
+let includeLabels = true, savingImage = false;
 // Group visibility is a view preference, independent of annotation undo history.
 const hiddenGroups = new Set();
 const snapshot = (includeSettings = false) => structuredClone({ groups, boxes, activeGroup, selected, ...(includeSettings ? { coordinateSettings: { normalized, normalizationPoints } } : {}) });
@@ -31,8 +33,9 @@ function renderBoxes() {
     const group = groups.find(g => g.id === box.groupId);
     const node = element('div', 'box' + (box.id === selected ? ' selected' : ''));
     node.dataset.id = box.id;
-    node.style.cssText = `left:${box.x / width * 100}%;top:${box.y / height * 100}%;width:${box.w / width * 100}%;height:${box.h / height * 100}%;--color:${group.color}`;
-    node.append(element('span', 'box-label', box.name));
+    const color = box.color || group.color;
+    node.style.cssText = `left:${box.x / width * 100}%;top:${box.y / height * 100}%;width:${box.w / width * 100}%;height:${box.h / height * 100}%;--color:${color};--label-text:${labelTextColor(color)}`;
+    if (includeLabels) node.append(element('span', 'box-label', box.name));
     if (box.id === selected) for (const handle of ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']) {
       const dot = element('span', 'handle'); dot.dataset.handle = handle; node.append(dot);
     }
@@ -50,7 +53,11 @@ function render() {
     section.style.setProperty('--color', group.color);
     const head = element('div', 'group-head');
     head.addEventListener('click', () => { activeGroup = group.id; render(); });
-    head.append(element('span', 'swatch'));
+    const groupColor = element('input', 'group-color'); groupColor.type = 'color'; groupColor.value = group.color;
+    groupColor.setAttribute('aria-label', `Color for ${group.name}`); groupColor.title = 'Change group color';
+    groupColor.addEventListener('click', event => event.stopPropagation());
+    groupColor.addEventListener('change', () => { checkpoint(); group.color = groupColor.value; render(); });
+    head.append(groupColor);
     const name = element('input', 'group-name'); name.value = group.name; name.maxLength = 100; name.setAttribute('aria-label', 'Group name');
     name.addEventListener('click', e => { e.stopPropagation(); activeGroup = group.id; document.querySelectorAll('.group').forEach(n => n.classList.toggle('active', n === section)); });
     name.addEventListener('change', () => { checkpoint(); group.name = name.value.trim() || group.name; render(); });
@@ -90,12 +97,15 @@ function render() {
   if (visibleCount !== boxes.length) $('box-count').textContent += ` · ${visibleCount} visible`;
   $('undo').disabled = !history.length; $('redo').disabled = !future.length; $('export').disabled = !width;
   $('import').disabled = !width;
+  $('save-image').disabled = !width || savingImage;
   const box = boxes.find(b => b.id === selected);
   $('properties').hidden = !box; $('no-selection').hidden = !!box;
   if (box) {
     $('box-name').value = box.name;
     $('box-group').replaceChildren(...groups.map(g => { const option = element('option', '', g.name); option.value = g.id; return option; }));
     $('box-group').value = box.groupId;
+    $('box-color').value = box.color || groups.find(group => group.id === box.groupId).color;
+    $('reset-box-color').disabled = !box.color;
     renderCoordinates(box);
   }
   updateHint();
@@ -285,6 +295,27 @@ $('undo').onclick = undo; $('redo').onclick = redo;
 $('add-group').onclick = () => { checkpoint(); const group = { id: crypto.randomUUID(), name: `Group ${groups.length + 1}`, color: colors[groups.length % colors.length] }; groups.push(group); activeGroup = group.id; render(); };
 $('box-name').onchange = () => { const box = boxes.find(b => b.id === selected); if (!box) return; checkpoint(); box.name = $('box-name').value.trim() || box.name; render(); };
 $('box-group').onchange = () => { const box = boxes.find(b => b.id === selected); if (!box) return; checkpoint(); box.groupId = $('box-group').value; activeGroup = box.groupId; render(); };
+$('box-color').onchange = () => { const box = boxes.find(b => b.id === selected); if (!box) return; checkpoint(); box.color = $('box-color').value; render(); };
+$('reset-box-color').onclick = () => { const box = boxes.find(b => b.id === selected); if (!box?.color) return; checkpoint(); delete box.color; render(); };
+$('include-labels').onchange = () => { includeLabels = $('include-labels').checked; renderBoxes(); };
+$('save-image').onclick = async () => {
+  if (!width || savingImage) return;
+  finishGesture(true); finishPan();
+  savingImage = true; $('save-image').disabled = true;
+  const exportName = imageName;
+  try {
+    const canvas = element('canvas'); canvas.width = width; canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Image export is unavailable in this browser.');
+    drawAnnotatedImage(context, $('image'), width, height, boxes, groups, hiddenGroups, includeLabels);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('Could not save this image. Try a smaller PNG.');
+    const url = URL.createObjectURL(blob), link = element('a');
+    link.href = url; link.download = exportName.replace(/\.png$/i, '') + '.annotated.png'; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000); toast('Annotated PNG saved');
+  } catch (error) { toast(error.message); }
+  finally { savingImage = false; $('save-image').disabled = !width; }
+};
 function deleteBox() { if (!selected) return; checkpoint(); boxes = boxes.filter(b => b.id !== selected); selected = null; render(); }
 $('delete-box').onclick = deleteBox;
 $('copy').onclick = async () => {
@@ -293,7 +324,7 @@ $('copy').onclick = async () => {
   try { await navigator.clipboard.writeText(text); toast('Coordinates copied'); } catch { toast('Clipboard unavailable. Use Export JSON to save coordinates.'); }
 };
 $('export').onclick = () => {
-  const data = { image: { name: imageName, width, height }, coordinate_system: normalized ? { normalized: true, scale: normalizationPoints, origin: 'top-left', rounding: 'nearest integer' } : { normalized: false, units: 'pixels', origin: 'top-left', rounding: 'none' }, groups: groups.map(group => ({ name: group.name, color: group.color, boxes: boxes.filter(b => b.groupId === group.id).map(box => ({ name: box.name, ...boxCoordinates(box), pixels: { x: box.x, y: box.y, width: box.w, height: box.h } })) })) };
+  const data = { image: { name: imageName, width, height }, coordinate_system: normalized ? { normalized: true, scale: normalizationPoints, origin: 'top-left', rounding: 'nearest integer' } : { normalized: false, units: 'pixels', origin: 'top-left', rounding: 'none' }, groups: groups.map(group => ({ name: group.name, color: group.color, boxes: boxes.filter(b => b.groupId === group.id).map(box => ({ name: box.name, ...(box.color ? { color: box.color } : {}), ...boxCoordinates(box), pixels: { x: box.x, y: box.y, width: box.w, height: box.h } })) })) };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   const link = element('a'); link.href = url; link.download = imageName.replace(/\.png$/i, '') + '.boxes.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); toast('Annotations exported');
 };

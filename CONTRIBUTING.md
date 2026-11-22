@@ -21,6 +21,8 @@ There are no dependencies to install.
 | `geometry.js` | Normalization and bounded move/resize math |
 | `annotations.js` | JSON import validation and coordinate conversion |
 | `annotations.test.js` | Import format and invalid-data tests |
+| `image-export.js` | Original-resolution canvas rendering and label contrast |
+| `image-export.test.js` | PNG drawing, visibility, labels, and color tests |
 | `geometry.test.js` | Geometry tests |
 | `app.test.js` | Event-handler tests using a small DOM fixture |
 | `server.js` | Local development server with an asset allowlist |
@@ -48,6 +50,8 @@ For interaction changes, also check the app in a real browser:
 - Toggle normalization, enter a custom scale, and check invalid values.
 - Paste copied coordinates and inspect JSON export in both modes.
 - Export and re-import annotations; check Undo/Redo of the import and rejection of mismatched image dimensions or invalid JSON.
+- Change group and individual box colors, reset an override, then undo/redo and export/import the JSON.
+- Save PNGs with labels on and off at different zoom levels; check original dimensions, transparent areas, and hidden-group exclusion in a real browser.
 - Try a narrow window and check that controls remain reachable.
 
 Use a synthetic or publicly shareable image when reporting a bug. Include the browser, reproduction steps, expected behavior, actual behavior, and screenshots if useful. Do not attach private images or credentials.

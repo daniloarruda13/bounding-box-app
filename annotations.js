@@ -24,6 +24,7 @@ export function parseAnnotations(data, image, createId = () => crypto.randomUUID
     for (const [boxIndex, sourceBox] of source.boxes.entries()) {
       const label = `Box ${boxIndex + 1} in group ${index + 1}`;
       if (!record(sourceBox) || typeof sourceBox.name !== 'string' || !sourceBox.name.trim()) fail(`${label} must have a name.`);
+      if (sourceBox.color !== undefined && (typeof sourceBox.color !== 'string' || !/^#[0-9a-f]{6}$/i.test(sourceBox.color))) fail(`${label} must have a six-digit hex color.`);
       let geometry;
       if (sourceBox.pixels !== undefined) {
         const pixels = sourceBox.pixels;
@@ -42,7 +43,7 @@ export function parseAnnotations(data, image, createId = () => crypto.randomUUID
       // Absorb floating-point error at the right/bottom image boundary only.
       geometry.w = Math.min(w, image.width - x); geometry.h = Math.min(h, image.height - y);
       if (geometry.w <= 0 || geometry.h <= 0) fail(`${label} is outside the image.`);
-      boxes.push({ id: createId(), name: sourceBox.name, groupId: group.id, ...geometry });
+      boxes.push({ id: createId(), name: sourceBox.name, groupId: group.id, ...(sourceBox.color ? { color: sourceBox.color } : {}), ...geometry });
     }
   }
   if (!groups.length) groups.push({ id: createId(), name: 'Group 1', color: '#63866a' });

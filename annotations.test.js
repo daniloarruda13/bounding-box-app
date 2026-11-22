@@ -26,6 +26,12 @@ test('supports legacy scale-only exports and custom normalized coordinates witho
   assert.equal(state.normalizationPoints, 2000);
   assert.deepEqual({ x: state.boxes[0].x, y: state.boxes[0].y, w: state.boxes[0].w, h: state.boxes[0].h }, { x: 50, y: 60, w: 150, h: 90 });
 });
+test('preserves optional box color overrides and rejects invalid color values', () => {
+  const data = fixture(); data.groups[0].boxes[0].color = '#ff00aa';
+  assert.equal(parseAnnotations(data, image).boxes[0].color, '#ff00aa');
+  data.groups[0].boxes[0].color = 'red;display:none';
+  assert.throws(() => parseAnnotations(data, image), /six-digit hex color/);
+});
 test('supports pixel exports with and without a pixels object', () => {
   const data = fixture(); data.coordinate_system = { normalized: false, units: 'pixels', origin: 'top-left' };
   assert.equal(parseAnnotations(data, image).normalized, false);

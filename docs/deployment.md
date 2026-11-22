@@ -11,7 +11,7 @@ The repository includes a workflow based on [GitHub's custom Pages workflow](htt
 3. Open **Actions → GitHub Pages → Run workflow** if the initial push ran before Pages was enabled.
 4. After deployment succeeds, use the URL shown in the deployment's `github-pages` environment.
 
-The Pages workflow runs tests and syntax checks before packaging the five browser assets and deploying. Pull requests run the separate test workflow; they cannot deploy to Pages. No personal access token is stored in the repository.
+The Pages workflow runs tests and syntax checks before packaging the six browser assets and deploying. Pull requests run the separate test workflow; they cannot deploy to Pages. No personal access token is stored in the repository.
 
 All asset paths are relative, so the app works under a project path such as `/bounding-box-app/` as well as at a domain root. GitHub Pages serves over HTTPS, which allows clipboard access subject to browser permissions.
 

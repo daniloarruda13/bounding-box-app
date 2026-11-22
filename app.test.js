@@ -243,6 +243,54 @@ test('resizing in draw mode, zoom, scrolling, and pointer cancellation', async t
         assert.equal(nodes['normalization-points'].value, 300);
       }
     });
+    await t.test('group and individual colors support undo, inheritance, reset, and JSON round trips', async () => {
+      const getGroupColor = () => nodes.groups.children[0].children[0].children.find(node => node.className === 'group-color');
+      let picker = getGroupColor(); picker.value = '#abcdef'; emit(picker, 'change');
+      assert.ok(overlay.children[0].style.cssText.includes('--color:#abcdef'));
+      nodes.undo.onclick(); assert.ok(overlay.children[0].style.cssText.includes('--color:#123456'));
+      nodes.redo.onclick();
+      const row = nodes.groups.children[0].children.find(node => node.className.includes('box-row')); row.onclick();
+      assert.equal(nodes['box-color'].value, '#abcdef'); assert.equal(nodes['reset-box-color'].disabled, true);
+      nodes['box-color'].value = '#ff0000'; nodes['box-color'].onchange();
+      assert.ok(overlay.children[0].style.cssText.includes('--color:#ff0000'));
+      picker = getGroupColor(); picker.value = '#00ff00'; emit(picker, 'change');
+      assert.ok(overlay.children[0].style.cssText.includes('--color:#ff0000'), 'overridden box keeps its color');
+      const createURL = URL.createObjectURL, createElement = doc.createElement;
+      let exported;
+      URL.createObjectURL = blob => { exported = blob; return createURL(blob); };
+      doc.createElement = tag => { const node = createElement(tag); node.click = () => {}; return node; };
+      try {
+        nodes.export.onclick(); const data = JSON.parse(await exported.text());
+        assert.equal(data.groups[0].color, '#00ff00'); assert.equal(data.groups[0].boxes[0].color, '#ff0000');
+        await importJSON(JSON.stringify(data)); assert.ok(overlay.children[0].style.cssText.includes('--color:#ff0000'));
+      } finally { URL.createObjectURL = createURL; doc.createElement = createElement; }
+      nodes.groups.children[0].children.find(node => node.className.includes('box-row')).onclick();
+      nodes['reset-box-color'].onclick(); assert.ok(overlay.children[0].style.cssText.includes('--color:#00ff00'));
+      nodes.undo.onclick(); assert.ok(overlay.children[0].style.cssText.includes('--color:#ff0000'));
+    });
+    await t.test('label checkbox and PNG download honor visibility, label choice, and original dimensions', async () => {
+      nodes['include-labels'].checked = false; nodes['include-labels'].onchange();
+      assert.equal(overlay.children[0].children.filter(node => node.className === 'box-label').length, 0);
+      const createURL = URL.createObjectURL, createElement = doc.createElement;
+      let canvas, downloaded, textCalls = 0, strokeCalls = 0;
+      const context = { clearRect() {}, drawImage() {}, save() {}, restore() {}, fillRect() {}, strokeRect() { strokeCalls++; }, fillText() { textCalls++; }, measureText: text => ({ width: text.length * 8 }) };
+      URL.createObjectURL = blob => { assert.equal(blob.type, 'image/png'); return createURL(blob); };
+      doc.createElement = tag => {
+        const node = createElement(tag);
+        if (tag === 'canvas') { canvas = node; node.getContext = () => context; node.toBlob = callback => callback(new Blob(['png-fixture'], { type: 'image/png' })); }
+        node.click = () => { downloaded = node.download; }; return node;
+      };
+      try {
+        await nodes['save-image'].onclick();
+        assert.equal(canvas.width, 1000); assert.equal(canvas.height, 600);
+        assert.equal(downloaded, 'fixture.annotated.png'); assert.equal(textCalls, 0); assert.equal(strokeCalls, 1);
+        nodes['include-labels'].checked = true; nodes['include-labels'].onchange();
+        assert.equal(overlay.children[0].children.filter(node => node.className === 'box-label').length, 1);
+        await nodes['save-image'].onclick(); assert.equal(textCalls, 1);
+        showGroup(0, false); strokeCalls = 0; textCalls = 0;
+        await nodes['save-image'].onclick(); assert.equal(strokeCalls, 0); assert.equal(textCalls, 0);
+      } finally { URL.createObjectURL = createURL; doc.createElement = createElement; }
+    });
   } finally {
     t.mock.timers.tick(3000);
     for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete globalThis[key]; else globalThis[key] = value; }

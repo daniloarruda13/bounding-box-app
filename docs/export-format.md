@@ -74,6 +74,12 @@ x_min: 100, y_min: 200, x_max: 400, y_max: 500
 
 Pixel mode copies unrounded values. Names and group membership are included in JSON export, not clipboard text.
 
+## Box colors
+
+The group's `color` is the default for its boxes. A box can optionally include its own six-digit hex `color`, for example `"color": "#ff0000"`. Import preserves this override; without it, the box inherits its group's color. Removing an override in the editor omits the box's color field from export. Older files without individual colors remain supported.
+
+**Save PNG** creates a separate rendered image, using the current colors and label-visibility setting and including only visible groups. JSON export still includes all groups and boxes, including hidden ones. Label visibility is not stored in JSON.
+
 ## Importing
 
 Open the matching PNG, then choose **Import JSON**. The file's image dimensions must match the open image. Import validates the whole file before replacing annotations, restores the coordinate mode and scale, and gives groups and boxes fresh internal IDs. All imported groups start visible. Undo/Redo reverses/reapplies the import, including its coordinate settings.

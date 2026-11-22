@@ -15,6 +15,8 @@ Images and annotations are processed in your browser. No account, image upload, 
 - Zoom, fit the image, view at 100%, and pan or scroll in both directions.
 - Choose pixel coordinates or normalize to 1–1,000,000 points (default 1000).
 - Copy coordinates as plain text or download grouped annotations as JSON.
+- Save the annotated image as a PNG at its original resolution, with optional box labels.
+- Customize group colors or override individual box colors; color changes support Undo/Redo.
 - Import a previously exported JSON file to restore groups, boxes, and coordinate settings.
 - Undo and redo annotation edits, with up to 100 history entries.
 
@@ -52,6 +54,18 @@ Use the **Show** checkbox in each group header to hide or display its boxes. Hid
 Import replaces the current annotations in one undoable step; **Undo** restores the previous groups, boxes, and coordinate settings. Imported groups start visible. The image dimensions must match those in the JSON; the filename can differ. The app checks dimensions, not image contents, so choose the correct PNG. The PNG is never embedded in the JSON.
 
 Normalization mode and scale are restored from the file. Original pixel geometry is preferred over rounded normalized coordinates. Older Boxroom exports are supported; files without pixel geometry can use normalized or pixel edge coordinates instead. Invalid files leave your current annotations unchanged.
+
+## Save an annotated PNG
+
+In **Save annotated image**, choose whether to **Show box labels**, then click **Save PNG**. The checkbox controls labels on both the editor canvas and the saved image. The download is named `<image-name>.annotated.png` and uses the original PNG dimensions, regardless of zoom or scrolling. Only visible groups are drawn. Selection outlines and resize handles are omitted; transparent areas of the original image remain transparent unless covered by annotations.
+
+PNG export is a rendered image for sharing. Use **Export JSON** as well to save editable annotation data.
+
+## Change box colors
+
+Click the color swatch in a group header to change the group's color. Boxes inherit this color by default. To customize one box, select it and choose **Box color** under **Box properties**. **Use group color** removes the individual override. Changing a group's color updates its inherited boxes while preserving any individual overrides.
+
+Colors apply to the editor and saved PNG and are preserved by JSON export/import. Label text automatically uses black or white for contrast. Label visibility is a display/export preference and is not stored in JSON.
 
 ## Coordinates and export
 
@@ -117,7 +131,7 @@ npm run build
 
 Tests cover coordinate math, boundaries, resizing while drawing, undo/redo, pointer cancellation, zoom and pan, normalization, pixel mode, and clipboard/export formatting. Tests use Node's built-in test runner and a small DOM fixture; timer mocking may print an experimental warning on Node 22.
 
-`npm run build` copies only the five browser assets into `_site/` for static hosting. See [CONTRIBUTING.md](CONTRIBUTING.md) for the file layout and manual checks, and [deployment instructions](docs/deployment.md) for GitHub Pages or other static hosts.
+`npm run build` copies only the six browser assets into `_site/` for static hosting. See [CONTRIBUTING.md](CONTRIBUTING.md) for the file layout and manual checks, and [deployment instructions](docs/deployment.md) for GitHub Pages or other static hosts.
 
 ## License
 
