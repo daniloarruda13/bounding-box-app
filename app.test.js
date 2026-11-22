@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 // Layout below models the scroll surface; real browser rendering is a separate check.
 class Node {
   constructor(tag = 'div') {
-    this.tagName = tag.toUpperCase(); this.children = []; this.dataset = {}; this.style = { setProperty() {} };
+    this.tagName = tag.toUpperCase(); this.children = []; this.dataset = {}; this.style = { setProperty(name, value) { this[name] = value; } };
     this.handlers = {}; this.captured = new Set(); this.classes = new Set(); this.value = ''; this.hidden = false;
     this.classList = {
       add: name => this.classes.add(name), remove: name => this.classes.delete(name),
@@ -269,6 +269,7 @@ test('resizing in draw mode, zoom, scrolling, and pointer cancellation', async t
       nodes.undo.onclick(); assert.ok(overlay.children[0].style.cssText.includes('--color:#ff0000'));
     });
     await t.test('label checkbox and PNG download honor visibility, label choice, and original dimensions', async () => {
+      nodes['zoom-actual'].onclick();
       nodes['include-labels'].checked = false; nodes['include-labels'].onchange();
       assert.equal(overlay.children[0].children.filter(node => node.className === 'box-label').length, 0);
       const createURL = URL.createObjectURL, createElement = doc.createElement;
@@ -284,6 +285,20 @@ test('resizing in draw mode, zoom, scrolling, and pointer cancellation', async t
         await nodes['save-image'].onclick();
         assert.equal(canvas.width, 1000); assert.equal(canvas.height, 600);
         assert.equal(downloaded, 'fixture.annotated.png'); assert.equal(textCalls, 0); assert.equal(strokeCalls, 1);
+        assert.equal(context.lineWidth, 2);
+        nodes['line-thickness'].value = '8'; nodes['line-thickness'].oninput();
+        assert.equal(nodes['line-thickness-number'].value, 8);
+        assert.equal(overlay.style['--outline-width'], '8px');
+        await nodes['save-image'].onclick(); assert.equal(context.lineWidth, 8);
+        nodes['zoom-in'].onclick(); assert.equal(overlay.style['--outline-width'], '10px');
+        nodes['zoom-actual'].onclick();
+        nodes['line-thickness-number'].value = '4'; nodes['line-thickness-number'].oninput();
+        assert.equal(nodes['line-thickness'].value, 4); assert.equal(overlay.style['--outline-width'], '4px');
+        for (const value of ['', '0', '-1', '21', '2.5']) {
+          nodes['line-thickness-number'].value = value; nodes['line-thickness-number'].onchange();
+          assert.equal(nodes['line-thickness-number'].value, 4);
+        }
+        nodes['line-thickness'].value = '2'; nodes['line-thickness'].oninput();
         assert.equal(fillCalls, 0); assert.equal(overlay.children[0].classes.has('filled'), false);
         nodes['fill-boxes'].checked = true; nodes['fill-boxes'].onchange();
         assert.equal(overlay.children[0].classes.has('filled'), true);

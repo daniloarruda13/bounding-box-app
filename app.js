@@ -11,6 +11,7 @@ let toastTimer;
 let zoom = 1, fitting = true, spaceHeld = false, pan = null;
 let normalized = true, normalizationPoints = 1000;
 let includeLabels = true, fillBoxes = false, savingImage = false;
+let lineThickness = 2;
 // Group visibility is a view preference, independent of annotation undo history.
 const hiddenGroups = new Set();
 const snapshot = (includeSettings = false) => structuredClone({ groups, boxes, activeGroup, selected, ...(includeSettings ? { coordinateSettings: { normalized, normalizationPoints } } : {}) });
@@ -148,6 +149,7 @@ function layoutCanvas() {
   const view = $('viewport');
   $('stage').style.width = `${width * zoom}px`;
   $('stage').style.height = `${height * zoom}px`;
+  $('overlay').style.setProperty('--outline-width', `${lineThickness * zoom}px`);
   // A separate content surface keeps every image edge reachable when zoomed.
   $('canvas-content').style.width = `${Math.max(view.clientWidth, width * zoom + 72)}px`;
   $('canvas-content').style.height = `${Math.max(view.clientHeight, height * zoom + 72)}px`;
@@ -299,6 +301,22 @@ $('box-color').onchange = () => { const box = boxes.find(b => b.id === selected)
 $('reset-box-color').onclick = () => { const box = boxes.find(b => b.id === selected); if (!box?.color) return; checkpoint(); delete box.color; render(); };
 $('include-labels').onchange = () => { includeLabels = $('include-labels').checked; renderBoxes(); };
 $('fill-boxes').onchange = () => { fillBoxes = $('fill-boxes').checked; renderBoxes(); };
+function setLineThickness(value) {
+  const thickness = Number(value);
+  if (!Number.isInteger(thickness) || thickness < 1 || thickness > 20) return false;
+  lineThickness = thickness;
+  $('line-thickness').value = thickness; $('line-thickness-number').value = thickness;
+  $('overlay').style.setProperty('--outline-width', `${lineThickness * zoom}px`);
+  return true;
+}
+$('line-thickness').oninput = () => setLineThickness($('line-thickness').value);
+$('line-thickness-number').oninput = () => setLineThickness($('line-thickness-number').value);
+$('line-thickness-number').onchange = () => {
+  if (!setLineThickness($('line-thickness-number').value)) {
+    $('line-thickness-number').value = lineThickness;
+    toast('Line thickness must be a whole number from 1 to 20 pixels.');
+  }
+};
 $('save-image').onclick = async () => {
   if (!width || savingImage) return;
   finishGesture(true); finishPan();
@@ -308,7 +326,7 @@ $('save-image').onclick = async () => {
     const canvas = element('canvas'); canvas.width = width; canvas.height = height;
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Image export is unavailable in this browser.');
-    drawAnnotatedImage(context, $('image'), width, height, boxes, groups, hiddenGroups, includeLabels, fillBoxes);
+    drawAnnotatedImage(context, $('image'), width, height, boxes, groups, hiddenGroups, includeLabels, fillBoxes, lineThickness);
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     if (!blob) throw new Error('Could not save this image. Try a smaller PNG.');
     const url = URL.createObjectURL(blob), link = element('a');

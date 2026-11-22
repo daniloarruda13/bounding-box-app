@@ -61,6 +61,8 @@ In **Save annotated image**, choose whether to **Show box labels**, then click *
 
 Boxes are outline-only by default. Enable **Fill boxes** in the same section for a translucent fill in each box's color. This preference applies to both the editor and saved PNG and is independent of label visibility. Fill and label preferences are not stored in JSON.
 
+Adjust **Line thickness** with the slider or numeric field (1–20 original image pixels, default 2). The preview updates immediately and scales with zoom; the saved PNG uses the same thickness at original resolution. This display/export preference is not stored in JSON and does not change box coordinates.
+
 PNG export is a rendered image for sharing. Use **Export JSON** as well to save editable annotation data.
 
 ## Change box colors

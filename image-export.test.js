@@ -33,6 +33,16 @@ test('box filling is optional, translucent, and respects group visibility', () =
   assert.equal(fills[0].alpha, .12); assert.deepEqual(fills[0].args, [100, 100, 200, 150]);
   assert.equal(context.calls.find(call => call.method === 'strokeRect').alpha, 1);
 });
+test('custom line thickness is used in image pixels and stays within tiny boxes', () => {
+  const context = contextFixture();
+  drawAnnotatedImage(context, {}, 1000, 600, boxes, groups, new Set(['two']), false, false, 10);
+  const stroke = context.calls.find(call => call.method === 'strokeRect');
+  assert.equal(stroke.lineWidth, 10); assert.deepEqual(stroke.args, [105, 105, 190, 140]);
+  const tiny = contextFixture();
+  drawAnnotatedImage(tiny, {}, 10, 10, [{ ...boxes[0], x: 0, y: 0, w: 3, h: 4 }], groups, new Set(), false, false, 20);
+  const tinyStroke = tiny.calls.find(call => call.method === 'strokeRect');
+  assert.equal(tinyStroke.lineWidth, 3); assert.deepEqual(tinyStroke.args, [1.5, 1.5, 0, 1]);
+});
 test('PNG uses per-box colors, optional labels, and keeps labels within image boundaries', () => {
   const context = contextFixture();
   drawAnnotatedImage(context, {}, 1000, 600, boxes, groups, new Set(), true);

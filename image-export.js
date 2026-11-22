@@ -5,12 +5,12 @@ export function labelTextColor(hex) {
 }
 
 // Render from original image pixels; zoom, selection, and resize handles are UI only.
-export function drawAnnotatedImage(context, image, width, height, boxes, groups, hiddenGroups, includeLabels, fillBoxes = false) {
+export function drawAnnotatedImage(context, image, width, height, boxes, groups, hiddenGroups, includeLabels, fillBoxes = false, lineThickness = 2) {
   context.clearRect(0, 0, width, height);
   context.drawImage(image, 0, 0, width, height);
   const groupById = new Map(groups.map(group => [group.id, group]));
   const visible = boxes.filter(box => !hiddenGroups.has(box.groupId));
-  const lineWidth = Math.max(2, Math.round(Math.max(width, height) / 600));
+  const lineWidth = lineThickness;
   const fontSize = Math.max(12, Math.min(48, Math.round(Math.max(width, height) / 65)));
   context.save();
   for (const box of visible) {
