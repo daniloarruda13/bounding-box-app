@@ -8,7 +8,7 @@ http.createServer(async (req, res) => {
   let pathname;
   try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
   catch { res.writeHead(400).end('Invalid URL'); return; }
-  const publicFiles = new Set(['/index.html', '/style.css', '/app.js', '/geometry.js']);
+  const publicFiles = new Set(['/index.html', '/style.css', '/app.js', '/geometry.js', '/annotations.js']);
   if (pathname === '/') pathname = '/index.html';
   if (!publicFiles.has(pathname)) { res.writeHead(404).end('Not found'); return; }
   const file = path.join(root, pathname);

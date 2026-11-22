@@ -5,6 +5,8 @@
 .group.is-hidden .group-name{color:#8b978e}
 .group.is-hidden .box-row{opacity:.5;cursor:default}
 .coordinate-settings{margin-top:18px;padding-bottom:10px;border-bottom:1px solid #e8ece7}
+.header-actions{gap:12px}
+@media(max-width:480px){.header{padding:0 10px}.header-actions{gap:6px}.header-actions .button{padding:9px 8px;font-size:12px}.brand{gap:5px;font-size:20px}.brand-icon{width:28px;height:28px;font-size:25px;line-height:26px}}
 .checkbox-label{display:flex;align-items:center;gap:9px;font-size:14px;color:#46604b;margin:0}
 .checkbox-label input{width:16px;height:16px;margin:0;accent-color:#284a38;flex-shrink:0}
 #normalization-points:disabled{background:#f3f5f2;color:#94a094}

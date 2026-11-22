@@ -15,6 +15,7 @@ Images and annotations are processed in your browser. No account, image upload, 
 - Zoom, fit the image, view at 100%, and pan or scroll in both directions.
 - Choose pixel coordinates or normalize to 1–1,000,000 points (default 1000).
 - Copy coordinates as plain text or download grouped annotations as JSON.
+- Import a previously exported JSON file to restore groups, boxes, and coordinate settings.
 - Undo and redo annotation edits, with up to 100 history entries.
 
 ## Run locally
@@ -41,6 +42,16 @@ The preview server listens on your own device only. Port 5173 must be available.
 Use the **Show** checkbox in each group header to hide or display its boxes. Hidden boxes cannot be selected or dragged, and hiding a selected box clears its selection. Group counts and JSON export still include hidden boxes. Visibility does not affect undo/redo of annotation edits. Drawing a new box in a hidden active group automatically shows that group so the new box is visible.
 
 **Export before refreshing, closing the page, or opening another image.** Annotations live in memory. Opening a new PNG clears boxes and undo history, while retaining group definitions and coordinate settings. Deleting a group deletes its boxes too; Undo restores them.
+
+## Import saved annotations
+
+1. Open the PNG that goes with your exported annotations.
+2. Click **Import JSON** next to Export JSON and choose the `.boxes.json` file.
+3. Continue editing the restored groups and boxes.
+
+Import replaces the current annotations in one undoable step; **Undo** restores the previous groups, boxes, and coordinate settings. Imported groups start visible. The image dimensions must match those in the JSON; the filename can differ. The app checks dimensions, not image contents, so choose the correct PNG. The PNG is never embedded in the JSON.
+
+Normalization mode and scale are restored from the file. Original pixel geometry is preferred over rounded normalized coordinates. Older Boxroom exports are supported; files without pixel geometry can use normalized or pixel edge coordinates instead. Invalid files leave your current annotations unchanged.
 
 ## Coordinates and export
 
@@ -91,7 +102,7 @@ Keyboard shortcuts do not run while you type in form fields. **1:1** means 100% 
 
 - The editor has no analytics, external fonts, or image-upload requests. Hosting services still receive normal page requests.
 - PNG is the supported input format. Very large images are limited by browser memory.
-- Work is not automatically saved. JSON import and restoring an exported session are not implemented.
+- Work is not automatically saved. Export JSON to save annotations, then reopen the matching PNG and import the JSON to resume editing. Zoom and group visibility preferences are not stored in exports.
 - To draw a new box, begin on empty image space; dragging an existing box edits it.
 - Clipboard access requires browser permission and a secure context (HTTPS or localhost). JSON export remains available when copying is unavailable.
 - The interface is designed primarily for a mouse and keyboard. Browser rendering and pointer behavior are not covered by the automated DOM fixture tests.
@@ -106,7 +117,7 @@ npm run build
 
 Tests cover coordinate math, boundaries, resizing while drawing, undo/redo, pointer cancellation, zoom and pan, normalization, pixel mode, and clipboard/export formatting. Tests use Node's built-in test runner and a small DOM fixture; timer mocking may print an experimental warning on Node 22.
 
-`npm run build` copies only the four browser assets into `_site/` for static hosting. See [CONTRIBUTING.md](CONTRIBUTING.md) for the file layout and manual checks, and [deployment instructions](docs/deployment.md) for GitHub Pages or other static hosts.
+`npm run build` copies only the five browser assets into `_site/` for static hosting. See [CONTRIBUTING.md](CONTRIBUTING.md) for the file layout and manual checks, and [deployment instructions](docs/deployment.md) for GitHub Pages or other static hosts.
 
 ## License
 

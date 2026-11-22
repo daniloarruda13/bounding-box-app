@@ -19,6 +19,8 @@ There are no dependencies to install.
 | `style.css` | Layout, handles, and responsive styles |
 | `app.js` | State, drawing, groups, navigation, clipboard, and export |
 | `geometry.js` | Normalization and bounded move/resize math |
+| `annotations.js` | JSON import validation and coordinate conversion |
+| `annotations.test.js` | Import format and invalid-data tests |
 | `geometry.test.js` | Geometry tests |
 | `app.test.js` | Event-handler tests using a small DOM fixture |
 | `server.js` | Local development server with an asset allowlist |
@@ -45,6 +47,7 @@ For interaction changes, also check the app in a real browser:
 - Zoom, scroll both axes, pan, and resize again at the new zoom.
 - Toggle normalization, enter a custom scale, and check invalid values.
 - Paste copied coordinates and inspect JSON export in both modes.
+- Export and re-import annotations; check Undo/Redo of the import and rejection of mismatched image dimensions or invalid JSON.
 - Try a narrow window and check that controls remain reachable.
 
 Use a synthetic or publicly shareable image when reporting a bug. Include the browser, reproduction steps, expected behavior, actual behavior, and screenshots if useful. Do not attach private images or credentials.

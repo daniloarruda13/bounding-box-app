@@ -217,6 +217,32 @@ test('resizing in draw mode, zoom, scrolling, and pointer cancellation', async t
       assert.equal(overlay.children.length, 2);
       assert.equal(nodes['box-count'].textContent, '3 boxes · 2 visible');
     });
+    const importFixture = () => ({ image: { width: 1000, height: 600 }, coordinate_system: { normalized: true, scale: 300, origin: 'top-left' }, groups: [{ name: 'Imported group', color: '#123456', boxes: [{ name: 'Imported box', pixels: { x: 50, y: 60, width: 200, height: 180 } }] }] });
+    const importJSON = text => nodes['json-file'].onchange({ target: { files: [{ text: async () => text }], value: 'annotations.json' } });
+    await t.test('imports annotations and coordinate settings with reversible replacement', async () => {
+      const before = overlay.children.map(node => [node.dataset.id, node.style.cssText]);
+      assert.equal(nodes.import.disabled, false);
+      await importJSON(JSON.stringify(importFixture()));
+      assert.equal(nodes['group-count'].textContent, 1); assert.equal(overlay.children.length, 1);
+      assert.equal(nodes.groups.children[0].children[0].children.find(node => node.className === 'group-name').value, 'Imported group');
+      assert.equal(nodes['normalization-points'].value, 300);
+      assert.equal(groupCheckbox(0).checked, true);
+      const row = nodes.groups.children[0].children.find(node => node.className.includes('box-row')); row.onclick();
+      assert.equal(nodes['box-name'].value, 'Imported box');
+      assert.deepEqual(coords(), { x_min: 15, y_min: 30, x_max: 75, y_max: 120 });
+      nodes.undo.onclick();
+      assert.deepEqual(overlay.children.map(node => [node.dataset.id, node.style.cssText]), before);
+      assert.equal(nodes['normalization-points'].value, 2000);
+      nodes.redo.onclick(); assert.equal(overlay.children.length, 1); assert.equal(nodes['normalization-points'].value, 300);
+    });
+    await t.test('invalid JSON, bad geometry, and image mismatch leave current work untouched', async () => {
+      const before = overlay.children.map(node => [node.dataset.id, node.style.cssText]);
+      for (const text of ['{broken', 'null', JSON.stringify({ ...importFixture(), image: { width: 400, height: 600 } }), JSON.stringify({ ...importFixture(), groups: [{}] })]) {
+        await importJSON(text);
+        assert.deepEqual(overlay.children.map(node => [node.dataset.id, node.style.cssText]), before);
+        assert.equal(nodes['normalization-points'].value, 300);
+      }
+    });
   } finally {
     t.mock.timers.tick(3000);
     for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete globalThis[key]; else globalThis[key] = value; }

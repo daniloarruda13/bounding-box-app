@@ -10,7 +10,7 @@
 <body>
   <header class="header">
     <a class="brand" href="./"><span class="brand-icon">▣</span> boxroom<span class="brand-divider"></span><span class="subtitle">Image annotation</span></a>
-    <div class="header-actions"><span class="privacy">Local & private</span><button id="export" class="button dark" disabled>Export JSON</button></div>
+    <div class="header-actions"><span class="privacy">Local & private</span><button id="import" class="button" title="Open the matching PNG first. Import replaces annotations; Undo restores them." disabled>Import JSON</button><input id="json-file" type="file" accept="application/json,.json" hidden><button id="export" class="button dark" disabled>Export JSON</button></div>
   </header>
   <main>
     <section class="editor">

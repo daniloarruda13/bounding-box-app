@@ -1,4 +1,5 @@
 import { clamp, normalize, rectangle, move, resize } from './geometry.js';
+import { parseAnnotations } from './annotations.js';
 
 const $ = id => document.getElementById(id);
 const colors = ['#63866a', '#c59152', '#688db4', '#b47791', '#8f80b3', '#4f9c9a'];
@@ -10,11 +11,15 @@ let zoom = 1, fitting = true, spaceHeld = false, pan = null;
 let normalized = true, normalizationPoints = 1000;
 // Group visibility is a view preference, independent of annotation undo history.
 const hiddenGroups = new Set();
-const snapshot = () => structuredClone({ groups, boxes, activeGroup, selected });
-function checkpoint() { history.push(snapshot()); if (history.length > 100) history.shift(); future = []; }
-function restore(state) { ({ groups, boxes, activeGroup, selected } = structuredClone(state)); render(); }
-function undo() { if (!history.length || gesture) return; future.push(snapshot()); restore(history.pop()); }
-function redo() { if (!future.length || gesture) return; history.push(snapshot()); restore(future.pop()); }
+const snapshot = (includeSettings = false) => structuredClone({ groups, boxes, activeGroup, selected, ...(includeSettings ? { coordinateSettings: { normalized, normalizationPoints } } : {}) });
+function checkpoint(includeSettings = false) { history.push(snapshot(includeSettings)); if (history.length > 100) history.shift(); future = []; }
+function restore(state) {
+  ({ groups, boxes, activeGroup, selected } = structuredClone(state));
+  if (state.coordinateSettings) { ({ normalized, normalizationPoints } = state.coordinateSettings); updateCoordinateSettings(); }
+  render();
+}
+function undo() { if (!history.length || gesture) return; const state = history.pop(); future.push(snapshot(!!state.coordinateSettings)); restore(state); }
+function redo() { if (!future.length || gesture) return; const state = future.pop(); history.push(snapshot(!!state.coordinateSettings)); restore(state); }
 function toast(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 2800); }
 function setMode(next) { mode = next; $('select-tool').classList.toggle('active', mode === 'select'); $('draw-tool').classList.toggle('active', mode === 'draw'); $('stage').classList.toggle('drawing', mode === 'draw'); updateHint(); }
 function updateHint() { $('hint').textContent = !width ? 'Open an image to get started' : mode === 'draw' ? 'Drag empty image to draw · Handles resize · Space + drag to pan' : 'Drag box to move · Handles resize · Space + drag to pan'; }
@@ -84,6 +89,7 @@ function render() {
   const visibleCount = boxes.filter(box => !hiddenGroups.has(box.groupId)).length;
   if (visibleCount !== boxes.length) $('box-count').textContent += ` · ${visibleCount} visible`;
   $('undo').disabled = !history.length; $('redo').disabled = !future.length; $('export').disabled = !width;
+  $('import').disabled = !width;
   const box = boxes.find(b => b.id === selected);
   $('properties').hidden = !box; $('no-selection').hidden = !!box;
   if (box) {
@@ -106,6 +112,7 @@ function boxCoordinates(box) {
 }
 function updateCoordinateSettings() {
   $('normalize').checked = normalized;
+  $('normalization-points').value = normalizationPoints;
   $('normalization-points').disabled = !normalized;
   $('coordinate-unit').textContent = normalized ? `0–${normalizationPoints}` : 'Pixels';
   $('coordinate-title').textContent = normalized ? 'Normalized coordinates' : 'Pixel coordinates';
@@ -256,6 +263,24 @@ $('select-tool').onclick = () => setMode('select');
 $('draw-tool').onclick = () => setMode('draw');
 $('upload').onclick = $('empty-upload').onclick = () => $('file').click();
 $('file').onchange = event => { openFile(event.target.files[0]); event.target.value = ''; };
+$('import').onclick = () => $('json-file').click();
+$('json-file').onchange = async event => {
+  const file = event.target.files[0]; event.target.value = '';
+  if (!file) return;
+  if (!width) { toast('Open the matching PNG image before importing annotations.'); return; }
+  const imageAtStart = objectURL;
+  try {
+    let data;
+    try { data = JSON.parse(await file.text()); } catch { throw new Error('This file could not be read as JSON. Choose a Boxroom JSON export.'); }
+    if (objectURL !== imageAtStart) throw new Error('The image changed while reading the JSON. Please import again.');
+    const imported = parseAnnotations(data, { width, height });
+    finishGesture(true); finishPan(); checkpoint(true);
+    ({ groups, boxes, normalized, normalizationPoints } = imported);
+    activeGroup = groups[0].id; selected = null;
+    setMode('select'); updateCoordinateSettings(); render();
+    toast(`Imported ${boxes.length} ${boxes.length === 1 ? 'box' : 'boxes'} in ${groups.length} ${groups.length === 1 ? 'group' : 'groups'}. Undo restores previous annotations.`);
+  } catch (error) { toast(error.message); }
+};
 $('undo').onclick = undo; $('redo').onclick = redo;
 $('add-group').onclick = () => { checkpoint(); const group = { id: crypto.randomUUID(), name: `Group ${groups.length + 1}`, color: colors[groups.length % colors.length] }; groups.push(group); activeGroup = group.id; render(); };
 $('box-name').onchange = () => { const box = boxes.find(b => b.id === selected); if (!box) return; checkpoint(); box.name = $('box-name').value.trim() || box.name; render(); };

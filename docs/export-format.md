@@ -72,4 +72,12 @@ Copy uses the current coordinate mode and scale. It copies only the selected box
 x_min: 100, y_min: 200, x_max: 400, y_max: 500
 ```
 
-Pixel mode copies unrounded values. Names and group membership are included in JSON export, not clipboard text. JSON import is not currently supported.
+Pixel mode copies unrounded values. Names and group membership are included in JSON export, not clipboard text.
+
+## Importing
+
+Open the matching PNG, then choose **Import JSON**. The file's image dimensions must match the open image. Import validates the whole file before replacing annotations, restores the coordinate mode and scale, and gives groups and boxes fresh internal IDs. All imported groups start visible. Undo/Redo reverses/reapplies the import, including its coordinate settings.
+
+When `pixels` is present it is authoritative, preserving geometry even if normalization rounded a small box's edges to the same value. Without `pixels`, the importer converts the four edge coordinates into image pixels using the export's scale and image dimensions. Those edges must define a positive-size rectangle within the image. Pixel geometry must also have positive size and stay inside the image.
+
+The original format with `coordinate_system.scale` but no `normalized` flag is treated as normalized. Group colors must be six-digit hex values. Every group needs a name and a boxes array; every box needs a name. An empty groups array imports as an empty default group. JSON import does not load the PNG or restore zoom or visibility preferences.
