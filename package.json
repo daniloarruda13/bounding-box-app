@@ -1,10 +1,15 @@
 {
   "name": "boxroom",
   "version": "1.0.0",
+  "description": "A browser-based PNG bounding box editor with groups and configurable coordinate normalization.",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "check": "node --check app.js && node --check geometry.js && node --check server.js && node --check scripts/build.js",
+    "build": "node scripts/build.js"
   }
 }
